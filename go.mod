@@ -1,4 +1,4 @@
-module github.com/maykonlf/broker
+module github.com/maykonlf/pubsub
 
 go 1.15
 

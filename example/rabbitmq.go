@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/maykonlf/broker/pkg/rabbitmq"
+	"github.com/maykonlf/pubsub/pkg/rabbitmq"
 	"log"
 	"time"
 )
