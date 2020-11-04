@@ -5,7 +5,7 @@ import (
 )
 
 type Subscriber interface {
-	Subscribe(handler func(body []byte) error)
+	Subscribe(handler func(message *Message))
 }
 
 func NewSubscriber(options *SubscriberOptions) Subscriber {
@@ -25,20 +25,20 @@ type subscriber struct {
 	active                    bool
 	disconnectionErrorChannel chan error
 	subscriberOptions         *SubscriberOptions
-	subscriberHandler         func(body []byte) error
+	subscriberHandler         func(message *Message)
 	messageDeliveryChannel    <-chan amqp.Delivery
 	queue                     amqp.Queue
 	conn                      Connection
 }
 
-func (s *subscriber) Subscribe(handler func(body []byte) error) {
+func (s *subscriber) Subscribe(handler func(message *Message)) {
 	s.registerSubscriberHandler(handler)
 	s.setupSubscriber()
 	s.openConsumerChannel()
 	s.startSubscriber()
 }
 
-func (s *subscriber) registerSubscriberHandler(handler func(body []byte) error) {
+func (s *subscriber) registerSubscriberHandler(handler func(message *Message)) {
 	s.subscriberHandler = handler
 }
 
@@ -101,18 +101,13 @@ func (s *subscriber) reconnectSubscriber() {
 
 func (s *subscriber) handleConsume() {
 	for delivery := range s.messageDeliveryChannel {
-		message := delivery
-		go s.handleDelivery(&message)
+		message := newMessageFromDelivery(delivery)
+		go s.handleDelivery(message)
 	}
 }
 
-func (s *subscriber) handleDelivery(delivery *amqp.Delivery) {
-	err := s.subscriberHandler(delivery.Body)
-	if err != nil {
-		_ = delivery.Nack(false, true)
-		return
-	}
-	_ = delivery.Ack(false)
+func (s *subscriber) handleDelivery(message *Message) {
+	s.subscriberHandler(message)
 }
 
 func (s *subscriber) setupExchange() {
