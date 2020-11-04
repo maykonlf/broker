@@ -18,7 +18,7 @@ func publisher() {
 
 	for {
 		for i := 0; i < 100; i++ {
-			go publisher.Publish(&rabbitmq.PublishOptions{
+			_ = publisher.Publish(&rabbitmq.PublishOptions{
 				Exchange:    "my-exchange",
 				RoutingKey:  "",
 				IsMandatory: false,
@@ -57,9 +57,11 @@ func subscriber() {
 		Exclusive:     false,
 	})
 
-	subscriber.Subscribe(func(body []byte) error {
+	subscriber.Subscribe(func(m *rabbitmq.Message) {
 		log.Println("consumed message")
 		time.Sleep(100 * time.Millisecond)
-		return nil
+		if err := m.Ack(); err != nil {
+			log.Println(err)
+		}
 	})
 }
