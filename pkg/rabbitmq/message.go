@@ -45,7 +45,7 @@ func newMessageFromDelivery(delivery amqp.Delivery) *Message {
 		messageType:     delivery.Type,
 		userID:          delivery.UserId,
 		appID:           delivery.AppId,
-		timestamp:       time.Time{},
+		timestamp:       delivery.Timestamp,
 		delivery:        delivery,
 	}
 }
