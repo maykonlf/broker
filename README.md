@@ -1,6 +1,6 @@
 # pubsub
 
-## Import
+## Installation
 ```bash
-go get -u github.com/maykonlf/pubsub@v0.1.0
+go get -u github.com/maykonlf/pubsub@v1.0.0
 ```
