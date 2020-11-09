@@ -32,8 +32,8 @@ func NewMessage() *Message {
 
 func newMessageFromDelivery(delivery amqp.Delivery) *Message {
 	return &Message{
-		id:              uuid.MustParse(delivery.MessageId),
-		correlationID:   uuid.MustParse(delivery.CorrelationId),
+		id:              parseUUIDOrGetDefault(delivery.MessageId),
+		correlationID:   parseUUIDOrGetDefault(delivery.CorrelationId),
 		headers:         delivery.Headers,
 		contentType:     delivery.ContentType,
 		contentEncoding: delivery.ContentEncoding,
@@ -48,6 +48,15 @@ func newMessageFromDelivery(delivery amqp.Delivery) *Message {
 		timestamp:       time.Time{},
 		delivery:        delivery,
 	}
+}
+
+func parseUUIDOrGetDefault(s string) uuid.UUID {
+	v, err := uuid.Parse(s)
+	if err != nil {
+		return uuid.Nil
+	}
+
+	return v
 }
 
 func (m *Message) GetID() uuid.UUID {
