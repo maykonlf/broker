@@ -1,14 +1,15 @@
 package main
 
 import (
+	"github.com/google/uuid"
 	"github.com/maykonlf/pubsub/pkg/rabbitmq"
 	"log"
 	"time"
 )
 
 func main() {
-	go subscriber()
-	publisher()
+	go publisher()
+	subscriber()
 }
 
 func publisher() {
@@ -16,17 +17,15 @@ func publisher() {
 		URI: "amqp://guest:guest@localhost:5672/",
 	})
 
-	for {
-		for i := 0; i < 100; i++ {
+	for i := 0; i < 100; i++ {
+		go func() {
 			_ = publisher.Publish(&rabbitmq.PublishOptions{
 				Exchange:    "my-exchange",
 				RoutingKey:  "",
 				IsMandatory: false,
 				IsImmediate: false,
-			}, rabbitmq.NewMessage())
-		}
-
-		time.Sleep(200 * time.Millisecond)
+			}, rabbitmq.NewMessage().SetCorrelationID(uuid.New()))
+		}()
 	}
 }
 
@@ -58,7 +57,7 @@ func subscriber() {
 	})
 
 	subscriber.Subscribe(func(m *rabbitmq.Message) {
-		log.Println("consumed message")
+		log.Printf("consumed message %s", m.ID())
 		time.Sleep(100 * time.Millisecond)
 		if err := m.Ack(); err != nil {
 			log.Println(err)

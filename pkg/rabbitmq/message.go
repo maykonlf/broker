@@ -18,7 +18,7 @@ type Message struct {
 	deliveryMode    uint8
 	priority        uint8
 	replyTo         string
-	expiration      string
+	expiration      time.Duration
 	messageType     string
 	userID          string
 	appID           string
@@ -41,7 +41,7 @@ func newMessageFromDelivery(delivery amqp.Delivery) *Message {
 		deliveryMode:    delivery.DeliveryMode,
 		priority:        delivery.Priority,
 		replyTo:         delivery.ReplyTo,
-		expiration:      delivery.Expiration,
+		expiration:      parseDurationStringToTimeDuration(delivery.Expiration),
 		messageType:     delivery.Type,
 		userID:          delivery.UserId,
 		appID:           delivery.AppId,
@@ -50,7 +50,12 @@ func newMessageFromDelivery(delivery amqp.Delivery) *Message {
 	}
 }
 
-func (m *Message) GetID() uuid.UUID {
+func parseDurationStringToTimeDuration(s string) time.Duration {
+	milliseconds, _ := strconv.ParseInt(s, 10, 64)
+	return time.Duration(milliseconds) * time.Millisecond
+}
+
+func (m *Message) ID() uuid.UUID {
 	return m.id
 }
 
@@ -59,7 +64,7 @@ func (m *Message) SetCorrelationID(id uuid.UUID) *Message {
 	return m
 }
 
-func (m *Message) GetCorrelationID() uuid.UUID {
+func (m *Message) CorrelationID() uuid.UUID {
 	return m.id
 }
 
@@ -72,7 +77,7 @@ func (m *Message) GetHeader(key string) interface{} {
 	return m.headers[key]
 }
 
-func (m *Message) GetHeaders() map[string]interface{} {
+func (m *Message) Headers() map[string]interface{} {
 	return m.headers
 }
 
@@ -81,7 +86,7 @@ func (m *Message) SetContentType(v string) *Message {
 	return m
 }
 
-func (m *Message) GetContentType() string {
+func (m *Message) ContentType() string {
 	return m.contentType
 }
 
@@ -90,7 +95,7 @@ func (m *Message) SetContentEncoding(v string) *Message {
 	return m
 }
 
-func (m *Message) GetContentEncoding() string {
+func (m *Message) ContentEncoding() string {
 	return m.contentEncoding
 }
 
@@ -99,7 +104,7 @@ func (m *Message) SetBody(body []byte) *Message {
 	return m
 }
 
-func (m *Message) GetBody() []byte {
+func (m *Message) Body() []byte {
 	return m.body
 }
 
@@ -108,7 +113,7 @@ func (m *Message) SetDeliveryModePersistent() *Message {
 	return m
 }
 
-func (m *Message) GetDeliveryMode() uint8 {
+func (m *Message) DeliveryMode() uint8 {
 	return m.deliveryMode
 }
 
@@ -117,7 +122,7 @@ func (m *Message) SetPriority(priority uint8) *Message {
 	return m
 }
 
-func (m *Message) GetPriority() uint8 {
+func (m *Message) Priority() uint8 {
 	return m.priority
 }
 
@@ -126,33 +131,25 @@ func (m *Message) SetReplyTo(v string) *Message {
 	return m
 }
 
-func (m *Message) GetReplyTo() string {
+func (m *Message) ReplyTo() string {
 	return m.replyTo
 }
 
 func (m *Message) SetExpiration(expiration time.Duration) *Message {
-	if expiration > 0 {
-		m.expiration = fmt.Sprintf("%d", expiration.Milliseconds())
-	}
-
+	m.expiration = expiration
 	return m
 }
 
-func (m *Message) GetExpiration() time.Duration {
-	if m.expiration == "" {
-		return 0
-	}
-
-	milliseconds, err := strconv.ParseInt(m.expiration, 10, 64)
-	if err != nil {
-		return 0
-	}
-
-	return time.Duration(milliseconds) * time.Millisecond
+func (m *Message) Expiration() time.Duration {
+	return m.expiration
 }
 
-func (m *Message) GetExpirationString() string {
-	return m.expiration
+func (m *Message) getExpirationString() string {
+	if m.expiration > 0 {
+		return fmt.Sprintf("%d", m.expiration.Milliseconds())
+	}
+
+	return ""
 }
 
 func (m *Message) SetType(v string) *Message {
@@ -160,7 +157,7 @@ func (m *Message) SetType(v string) *Message {
 	return m
 }
 
-func (m *Message) GetType() string {
+func (m *Message) Type() string {
 	return m.messageType
 }
 
@@ -169,7 +166,7 @@ func (m *Message) SetUserID(useID string) *Message {
 	return m
 }
 
-func (m *Message) GetUserID() string {
+func (m *Message) UserID() string {
 	return m.userID
 }
 
@@ -178,7 +175,7 @@ func (m *Message) SetAppID(appID string) *Message {
 	return m
 }
 
-func (m *Message) GetAppID() string {
+func (m *Message) AppID() string {
 	return m.appID
 }
 
@@ -187,7 +184,7 @@ func (m *Message) SetTimestamp(timestamp time.Time) *Message {
 	return m
 }
 
-func (m *Message) GetTimestamp() time.Time {
+func (m *Message) Timestamp() time.Time {
 	return m.timestamp
 }
 
@@ -205,19 +202,19 @@ func (m *Message) Reject() error {
 
 func (m *Message) getPublishing() amqp.Publishing {
 	return amqp.Publishing{
-		Headers:         m.GetHeaders(),
-		ContentType:     m.GetContentType(),
-		ContentEncoding: m.GetContentEncoding(),
-		DeliveryMode:    m.GetDeliveryMode(),
-		Priority:        m.GetPriority(),
-		CorrelationId:   m.GetCorrelationID().String(),
-		ReplyTo:         m.GetReplyTo(),
-		Expiration:      m.GetExpirationString(),
-		MessageId:       m.GetID().String(),
-		Timestamp:       m.GetTimestamp(),
-		Type:            m.GetType(),
-		UserId:          m.GetUserID(),
-		AppId:           m.GetAppID(),
-		Body:            m.GetBody(),
+		Headers:         m.Headers(),
+		ContentType:     m.ContentType(),
+		ContentEncoding: m.ContentEncoding(),
+		DeliveryMode:    m.DeliveryMode(),
+		Priority:        m.Priority(),
+		CorrelationId:   m.CorrelationID().String(),
+		ReplyTo:         m.ReplyTo(),
+		Expiration:      m.getExpirationString(),
+		MessageId:       m.ID().String(),
+		Timestamp:       m.Timestamp(),
+		Type:            m.Type(),
+		UserId:          m.UserID(),
+		AppId:           m.AppID(),
+		Body:            m.Body(),
 	}
 }
