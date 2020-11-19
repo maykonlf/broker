@@ -30,7 +30,9 @@ func publisher() {
 
 func subscriber() {
 	subscriber := rabbitmq.NewSubscriber(&rabbitmq.SubscriberOptions{
-		URI: "amqp://guest:guest@localhost:5672/",
+		ConnectionOptions: &rabbitmq.ConnectionOptions{
+			URI:                    "amqp://guest:guest@localhost:5672/",
+		},
 		QueueOptions: &rabbitmq.QueueOptions{
 			Name:        "my-consumer-queue",
 			Durable:     true,

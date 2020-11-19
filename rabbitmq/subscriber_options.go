@@ -1,17 +1,16 @@
 package rabbitmq
 
 type SubscriberOptions struct {
-	URI             string
-	QueueOptions    *QueueOptions
-	ExchangeOptions *ExchangeOptions
-	MaxPriority     uint8
-	PrefetchCount   int
-	Name            string
-	AutoAck         bool
-	NoWait          bool
-	NoLocal         bool
-	Exclusive       bool
-	Args            map[string]interface{}
+	ConnectionOptions *ConnectionOptions
+	QueueOptions      *QueueOptions
+	ExchangeOptions   *ExchangeOptions
+	PrefetchCount     int
+	Name              string
+	AutoAck           bool
+	NoWait            bool
+	NoLocal           bool
+	Exclusive         bool
+	Args              map[string]interface{}
 }
 
 type ExchangeOptions struct {

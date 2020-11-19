@@ -6,9 +6,7 @@ import (
 )
 
 func NewSubscriber(options *SubscriberOptions) pubsub.Subscriber {
-	conn := NewConnection(&ConnectionOptions{
-		URI: options.URI,
-	})
+	conn := NewConnection(options.ConnectionOptions)
 
 	return &subscriber{
 		conn:                      conn,
