@@ -6,8 +6,6 @@ import (
 	"github.com/streadway/amqp"
 )
 
-const ReconnectInterval = 1 * time.Second
-
 type Connection interface {
 	GetConn() *amqp.Connection
 	GetChannel() *amqp.Channel
@@ -20,6 +18,9 @@ type connection struct {
 	channel                   *amqp.Channel
 	disconnectionErrorChannel chan *amqp.Error
 	reconnectHooks            []func()
+	backoffInterval           time.Duration
+	initialBackoffInterval    time.Duration
+	maxBackoffInterval        time.Duration
 }
 
 func (c *connection) SetReconnectHooks(hooks ...func()) {
@@ -30,6 +31,9 @@ func NewConnection(options *ConnectionOptions) Connection {
 	conn := &connection{
 		options:                   options,
 		disconnectionErrorChannel: make(chan *amqp.Error),
+		backoffInterval:           options.getInitialBackoffInterval(),
+		initialBackoffInterval:    options.getInitialBackoffInterval(),
+		maxBackoffInterval:        options.getMaxBackoffInterval(),
 	}
 	conn.connect()
 	return conn
@@ -38,6 +42,10 @@ func NewConnection(options *ConnectionOptions) Connection {
 func (c *connection) connect() {
 	panicOnError(c.dial())
 	panicOnError(c.openChannel())
+	c.reconnectOnDisconnection()
+}
+
+func (c *connection) reconnectOnDisconnection() {
 	go c.subscribeDisconnectionEvent()
 	go c.watchDisconnectionAndReconnect()
 }
@@ -57,7 +65,12 @@ func (c *connection) dial() (err error) {
 
 func (c *connection) openChannel() (err error) {
 	c.channel, err = c.connection.Channel()
-	return err
+	if err != nil {
+		return err
+	}
+
+	c.resetBackoffInterval()
+	return nil
 }
 
 func (c *connection) subscribeDisconnectionEvent() {
@@ -68,12 +81,12 @@ func (c *connection) subscribeDisconnectionEvent() {
 func (c *connection) watchDisconnectionAndReconnect() {
 	err := <-c.disconnectionErrorChannel
 	if err != nil {
-		c.reconnect()
+		c.reconnectAndTriggerHooks()
 	}
 }
 
-func (c *connection) reconnect() {
-	time.Sleep(ReconnectInterval)
+func (c *connection) reconnectAndTriggerHooks() {
+	c.waitForRetryAndIncreaseBackoffDuration()
 	c.connect()
 	if len(c.reconnectHooks) > 0 {
 		c.triggerReconnectHooks()
@@ -84,6 +97,23 @@ func (c *connection) triggerReconnectHooks() {
 	for _, hook := range c.reconnectHooks {
 		hook()
 	}
+}
+
+func (c *connection) waitForRetryAndIncreaseBackoffDuration() {
+	time.Sleep(c.backoffInterval)
+	c.increaseReconnectBackoffInterval()
+}
+
+func (c *connection) increaseReconnectBackoffInterval() {
+	c.backoffInterval *= 2
+
+	if c.backoffInterval > c.maxBackoffInterval {
+		c.backoffInterval = c.maxBackoffInterval
+	}
+}
+
+func (c *connection) resetBackoffInterval() {
+	c.backoffInterval = c.initialBackoffInterval
 }
 
 func panicOnError(err error) {

@@ -45,7 +45,7 @@ func newMessageFromDelivery(delivery amqp.Delivery) *Message {
 		messageType:     delivery.Type,
 		userID:          delivery.UserId,
 		appID:           delivery.AppId,
-		timestamp:       time.Time{},
+		timestamp:       delivery.Timestamp,
 		delivery:        delivery,
 	}
 }
@@ -79,6 +79,11 @@ func (m *Message) GetHeader(key string) interface{} {
 
 func (m *Message) Headers() map[string]interface{} {
 	return m.headers
+}
+
+func (m *Message) SetHeaders(headers map[string]interface{}) *Message {
+	m.headers = headers
+	return m
 }
 
 func (m *Message) SetContentType(v string) *Message {
