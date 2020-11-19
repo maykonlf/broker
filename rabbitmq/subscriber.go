@@ -1,17 +1,12 @@
 package rabbitmq
 
 import (
+	"github.com/maykonlf/pubsub"
 	"github.com/streadway/amqp"
 )
 
-type Subscriber interface {
-	Subscribe(handler func(message *Message))
-}
-
-func NewSubscriber(options *SubscriberOptions) Subscriber {
-	conn := NewConnection(&ConnectionOptions{
-		URI: options.URI,
-	})
+func NewSubscriber(options *SubscriberOptions) pubsub.Subscriber {
+	conn := NewConnection(options.ConnectionOptions)
 
 	return &subscriber{
 		conn:                      conn,
@@ -25,20 +20,20 @@ type subscriber struct {
 	active                    bool
 	disconnectionErrorChannel chan error
 	subscriberOptions         *SubscriberOptions
-	subscriberHandler         func(message *Message)
+	subscriberHandler         func(message pubsub.Message)
 	messageDeliveryChannel    <-chan amqp.Delivery
 	queue                     amqp.Queue
 	conn                      Connection
 }
 
-func (s *subscriber) Subscribe(handler func(message *Message)) {
+func (s *subscriber) Subscribe(handler func(message pubsub.Message)) {
 	s.registerSubscriberHandler(handler)
 	s.setupSubscriber()
 	s.openConsumerChannel()
 	s.startSubscriber()
 }
 
-func (s *subscriber) registerSubscriberHandler(handler func(message *Message)) {
+func (s *subscriber) registerSubscriberHandler(handler func(message pubsub.Message)) {
 	s.subscriberHandler = handler
 }
 
@@ -106,7 +101,7 @@ func (s *subscriber) handleConsume() {
 	}
 }
 
-func (s *subscriber) handleDelivery(message *Message) {
+func (s *subscriber) handleDelivery(message pubsub.Message) {
 	s.subscriberHandler(message)
 }
 

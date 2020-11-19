@@ -30,35 +30,6 @@ func NewMessage() *Message {
 	return &Message{id: uuid.New()}
 }
 
-func newMessageFromDelivery(delivery amqp.Delivery) *Message {
-	return &Message{
-		id:              parseUUIDOrGetDefault(delivery.MessageId),
-		correlationID:   parseUUIDOrGetDefault(delivery.CorrelationId),
-		headers:         delivery.Headers,
-		contentType:     delivery.ContentType,
-		contentEncoding: delivery.ContentEncoding,
-		body:            delivery.Body,
-		deliveryMode:    delivery.DeliveryMode,
-		priority:        delivery.Priority,
-		replyTo:         delivery.ReplyTo,
-		expiration:      delivery.Expiration,
-		messageType:     delivery.Type,
-		userID:          delivery.UserId,
-		appID:           delivery.AppId,
-		timestamp:       delivery.Timestamp,
-		delivery:        delivery,
-	}
-}
-
-func parseUUIDOrGetDefault(s string) uuid.UUID {
-	v, err := uuid.Parse(s)
-	if err != nil {
-		return uuid.Nil
-	}
-
-	return v
-}
-
 func (m *Message) GetID() uuid.UUID {
 	return m.id
 }
@@ -212,21 +183,3 @@ func (m *Message) Reject() error {
 	return m.delivery.Reject(false)
 }
 
-func (m *Message) getPublishing() amqp.Publishing {
-	return amqp.Publishing{
-		Headers:         m.GetHeaders(),
-		ContentType:     m.GetContentType(),
-		ContentEncoding: m.GetContentEncoding(),
-		DeliveryMode:    m.GetDeliveryMode(),
-		Priority:        m.GetPriority(),
-		CorrelationId:   m.GetCorrelationID().String(),
-		ReplyTo:         m.GetReplyTo(),
-		Expiration:      m.GetExpirationString(),
-		MessageId:       m.GetID().String(),
-		Timestamp:       m.GetTimestamp(),
-		Type:            m.GetType(),
-		UserId:          m.GetUserID(),
-		AppId:           m.GetAppID(),
-		Body:            m.GetBody(),
-	}
-}

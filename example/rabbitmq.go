@@ -1,38 +1,38 @@
 package main
 
 import (
-	"github.com/maykonlf/pubsub/pkg/rabbitmq"
+	"github.com/google/uuid"
+	"github.com/maykonlf/pubsub"
+	"github.com/maykonlf/pubsub/rabbitmq"
 	"log"
 	"time"
 )
 
 func main() {
-	go subscriber()
-	publisher()
+	go publisher()
+	subscriber()
 }
 
 func publisher() {
 	publisher := rabbitmq.NewPublisher(&rabbitmq.PublisherOptions{
-		URI: "amqp://guest:guest@localhost:5672/",
+		ConnectionOptions: &rabbitmq.ConnectionOptions{
+			URI:                    "amqp://guest:guest@localhost:5672/",
+		},
 	})
 
-	for {
-		for i := 0; i < 100; i++ {
-			_ = publisher.Publish(&rabbitmq.PublishOptions{
-				Exchange:    "my-exchange",
-				RoutingKey:  "",
-				IsMandatory: false,
-				IsImmediate: false,
-			}, rabbitmq.NewMessage())
-		}
-
-		time.Sleep(200 * time.Millisecond)
+	for i := 0; i < 100; i++ {
+		go func() {
+			_ = publisher.Publish(rabbitmq.NewMessage().SetCorrelationID(uuid.New()),
+				"my-exchange")
+		}()
 	}
 }
 
 func subscriber() {
 	subscriber := rabbitmq.NewSubscriber(&rabbitmq.SubscriberOptions{
-		URI: "amqp://guest:guest@localhost:5672/",
+		ConnectionOptions: &rabbitmq.ConnectionOptions{
+			URI:                    "amqp://guest:guest@localhost:5672/",
+		},
 		QueueOptions: &rabbitmq.QueueOptions{
 			Name:        "my-consumer-queue",
 			Durable:     true,
@@ -57,8 +57,8 @@ func subscriber() {
 		Exclusive:     false,
 	})
 
-	subscriber.Subscribe(func(m *rabbitmq.Message) {
-		log.Println("consumed message")
+	subscriber.Subscribe(func(m pubsub.Message) {
+		log.Printf("consumed message %s", m.ID())
 		time.Sleep(100 * time.Millisecond)
 		if err := m.Ack(); err != nil {
 			log.Println(err)
