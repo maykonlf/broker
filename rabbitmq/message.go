@@ -1,8 +1,8 @@
 package rabbitmq
 
 import (
-	"fmt"
 	"github.com/google/uuid"
+	"github.com/maykonlf/pubsub"
 	"github.com/streadway/amqp"
 	"strconv"
 	"time"
@@ -26,11 +26,11 @@ type Message struct {
 	delivery        amqp.Delivery
 }
 
-func NewMessage() *Message {
+func NewMessage() pubsub.Message {
 	return &Message{id: uuid.New()}
 }
 
-func newMessageFromDelivery(delivery amqp.Delivery) *Message {
+func newMessageFromDelivery(delivery amqp.Delivery) pubsub.Message {
 	return &Message{
 		id:              uuid.MustParse(delivery.MessageId),
 		correlationID:   uuid.MustParse(delivery.CorrelationId),
@@ -59,7 +59,7 @@ func (m *Message) ID() uuid.UUID {
 	return m.id
 }
 
-func (m *Message) SetCorrelationID(id uuid.UUID) *Message {
+func (m *Message) SetCorrelationID(id uuid.UUID) pubsub.Message {
 	m.correlationID = id
 	return m
 }
@@ -68,7 +68,7 @@ func (m *Message) CorrelationID() uuid.UUID {
 	return m.id
 }
 
-func (m *Message) SetHeader(key string, value interface{}) *Message {
+func (m *Message) SetHeader(key string, value interface{}) pubsub.Message {
 	m.headers[key] = value
 	return m
 }
@@ -81,12 +81,12 @@ func (m *Message) Headers() map[string]interface{} {
 	return m.headers
 }
 
-func (m *Message) SetHeaders(headers map[string]interface{}) *Message {
+func (m *Message) SetHeaders(headers map[string]interface{}) pubsub.Message {
 	m.headers = headers
 	return m
 }
 
-func (m *Message) SetContentType(v string) *Message {
+func (m *Message) SetContentType(v string) pubsub.Message {
 	m.contentType = v
 	return m
 }
@@ -95,7 +95,7 @@ func (m *Message) ContentType() string {
 	return m.contentType
 }
 
-func (m *Message) SetContentEncoding(v string) *Message {
+func (m *Message) SetContentEncoding(v string) pubsub.Message {
 	m.contentEncoding = v
 	return m
 }
@@ -104,7 +104,7 @@ func (m *Message) ContentEncoding() string {
 	return m.contentEncoding
 }
 
-func (m *Message) SetBody(body []byte) *Message {
+func (m *Message) SetBody(body []byte) pubsub.Message {
 	m.body = body
 	return m
 }
@@ -113,7 +113,7 @@ func (m *Message) Body() []byte {
 	return m.body
 }
 
-func (m *Message) SetDeliveryModePersistent() *Message {
+func (m *Message) SetDeliveryModePersistent() pubsub.Message {
 	m.deliveryMode = 2
 	return m
 }
@@ -122,7 +122,7 @@ func (m *Message) DeliveryMode() uint8 {
 	return m.deliveryMode
 }
 
-func (m *Message) SetPriority(priority uint8) *Message {
+func (m *Message) SetPriority(priority uint8) pubsub.Message {
 	m.priority = priority
 	return m
 }
@@ -131,7 +131,7 @@ func (m *Message) Priority() uint8 {
 	return m.priority
 }
 
-func (m *Message) SetReplyTo(v string) *Message {
+func (m *Message) SetReplyTo(v string) pubsub.Message {
 	m.replyTo = v
 	return m
 }
@@ -140,7 +140,7 @@ func (m *Message) ReplyTo() string {
 	return m.replyTo
 }
 
-func (m *Message) SetExpiration(expiration time.Duration) *Message {
+func (m *Message) SetExpiration(expiration time.Duration) pubsub.Message {
 	m.expiration = expiration
 	return m
 }
@@ -149,15 +149,7 @@ func (m *Message) Expiration() time.Duration {
 	return m.expiration
 }
 
-func (m *Message) getExpirationString() string {
-	if m.expiration > 0 {
-		return fmt.Sprintf("%d", m.expiration.Milliseconds())
-	}
-
-	return ""
-}
-
-func (m *Message) SetType(v string) *Message {
+func (m *Message) SetType(v string) pubsub.Message {
 	m.messageType = v
 	return m
 }
@@ -166,7 +158,7 @@ func (m *Message) Type() string {
 	return m.messageType
 }
 
-func (m *Message) SetUserID(useID string) *Message {
+func (m *Message) SetUserID(useID string) pubsub.Message {
 	m.userID = useID
 	return m
 }
@@ -175,7 +167,7 @@ func (m *Message) UserID() string {
 	return m.userID
 }
 
-func (m *Message) SetAppID(appID string) *Message {
+func (m *Message) SetAppID(appID string) pubsub.Message {
 	m.appID = appID
 	return m
 }
@@ -184,7 +176,7 @@ func (m *Message) AppID() string {
 	return m.appID
 }
 
-func (m *Message) SetTimestamp(timestamp time.Time) *Message {
+func (m *Message) SetTimestamp(timestamp time.Time) pubsub.Message {
 	m.timestamp = timestamp
 	return m
 }
@@ -203,23 +195,4 @@ func (m *Message) Nack() error {
 
 func (m *Message) Reject() error {
 	return m.delivery.Reject(false)
-}
-
-func (m *Message) getPublishing() amqp.Publishing {
-	return amqp.Publishing{
-		Headers:         m.Headers(),
-		ContentType:     m.ContentType(),
-		ContentEncoding: m.ContentEncoding(),
-		DeliveryMode:    m.DeliveryMode(),
-		Priority:        m.Priority(),
-		CorrelationId:   m.CorrelationID().String(),
-		ReplyTo:         m.ReplyTo(),
-		Expiration:      m.getExpirationString(),
-		MessageId:       m.ID().String(),
-		Timestamp:       m.Timestamp(),
-		Type:            m.Type(),
-		UserId:          m.UserID(),
-		AppId:           m.AppID(),
-		Body:            m.Body(),
-	}
 }
