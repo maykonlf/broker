@@ -30,7 +30,7 @@ func NewMessage() pubsub.Message {
 	return &Message{id: uuid.New()}
 }
 
-func newMessageFromDelivery(delivery amqp.Delivery) pubsub.Message {
+func NewMessageFromDelivery(delivery amqp.Delivery) pubsub.Message {
 	return &Message{
 		id:              uuid.MustParse(delivery.MessageId),
 		correlationID:   uuid.MustParse(delivery.CorrelationId),

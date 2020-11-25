@@ -1,4 +1,4 @@
-package rabbitmq
+package subscriber
 
 const (
 	ExchangeTypeDirect ExchangeType = iota

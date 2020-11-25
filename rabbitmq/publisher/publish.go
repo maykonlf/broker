@@ -1,4 +1,4 @@
-package rabbitmq
+package publisher
 
 type PublishOptions struct {
 	Exchange    string
