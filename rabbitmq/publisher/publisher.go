@@ -1,33 +1,44 @@
-package rabbitmq
+package publisher
 
 import (
 	"fmt"
 	"github.com/maykonlf/pubsub"
+	"github.com/maykonlf/pubsub/rabbitmq/connection"
 	"github.com/streadway/amqp"
 	"sync"
 	"time"
 )
 
-func NewPublisher(options *PublisherOptions) pubsub.Publisher {
-	conn := NewConnection(options.ConnectionOptions)
-	return &publisher{
-		options: options,
-		conn:    conn,
-		mutex:   &sync.Mutex{},
+type Publisher interface {
+	pubsub.Publisher
+}
+
+// NewPublisher returns a new RabbitMQ publisher.
+func NewPublisher(uri string, options ...Option) Publisher {
+	publisher := &publisher{
+		mutex:             &sync.Mutex{},
+		connectionOptions: &connection.Options{URI: uri},
 	}
+
+	for _, optionFunction := range options {
+		optionFunction(publisher)
+	}
+
+	return publisher
 }
 
 type publisher struct {
-	options *PublisherOptions
-	conn    Connection
-	mutex   *sync.Mutex
+	mutex             *sync.Mutex
+	connectionOptions *connection.Options
+	conn              connection.Connection
 }
 
+// Publish publishes a message to a topic (and optionally to a routing key).
 func (p *publisher) Publish(m pubsub.Message, topic string, routingKey ...string) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	return p.conn.GetChannel().Publish(
+	return p.getConnection().GetChannel().Publish(
 		topic,
 		p.extractFirstRoutingKeyOrDefault(routingKey),
 		false,
@@ -64,4 +75,12 @@ func (p *publisher) extractFirstRoutingKeyOrDefault(key []string) string {
 	}
 
 	return ""
+}
+
+func (p *publisher) getConnection() connection.Connection {
+	if p.conn == nil {
+		p.conn = connection.NewConnection(p.connectionOptions)
+	}
+
+	return p.conn
 }

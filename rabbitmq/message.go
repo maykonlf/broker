@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Message represents a RabbitMQ published/received message.
 type Message struct {
 	id              uuid.UUID
 	correlationID   uuid.UUID
@@ -26,11 +27,12 @@ type Message struct {
 	delivery        amqp.Delivery
 }
 
+// NewMessage creates a new RabbitMQ message with a unique new ID.
 func NewMessage() pubsub.Message {
 	return &Message{id: uuid.New()}
 }
 
-func newMessageFromDelivery(delivery amqp.Delivery) pubsub.Message {
+func NewMessageFromDelivery(delivery amqp.Delivery) pubsub.Message {
 	return &Message{
 		id:              uuid.MustParse(delivery.MessageId),
 		correlationID:   uuid.MustParse(delivery.CorrelationId),
