@@ -4,33 +4,33 @@ import (
 	"github.com/google/uuid"
 	"github.com/maykonlf/pubsub"
 	"github.com/maykonlf/pubsub/rabbitmq"
-	publisher2 "github.com/maykonlf/pubsub/rabbitmq/publisher"
-	subscriber2 "github.com/maykonlf/pubsub/rabbitmq/subscriber"
+	"github.com/maykonlf/pubsub/rabbitmq/publisher"
+	"github.com/maykonlf/pubsub/rabbitmq/subscriber"
 	"log"
 	"time"
 )
 
 func main() {
-	go publisher()
-	subscriber()
+	go startPublisher()
+	startSubscriber()
 }
 
-func publisher() {
-	publisher := publisher2.NewPublisher("amqp://guest:guest@localhost:5672/")
+func startPublisher() {
+	pub := publisher.NewPublisher("amqp://guest:guest@localhost:5672/")
 
 	for {
-		_ = publisher.Publish(rabbitmq.NewMessage().SetCorrelationID(uuid.New()),
+		_ = pub.Publish(rabbitmq.NewMessage().SetCorrelationID(uuid.New()),
 			"my-topic", "my-key")
 	}
 }
 
-func subscriber() {
-	subs := subscriber2.NewSubscriber("amqp://guest:guest@localhost:5672/",
-		subscriber2.WithName("my consumer name"),
-		subscriber2.WithDurableTopicExchange("my-topic", "my-key"),
-		subscriber2.WithDurableFanoutExchange("my-fanout"),
-		subscriber2.WithDurablePriorityQueue("my-priority-queue", 5),
-		subscriber2.WithPrefetch(20))
+func startSubscriber() {
+	subs := subscriber.NewSubscriber("amqp://guest:guest@localhost:5672/",
+		subscriber.WithName("my consumer name"),
+		subscriber.WithDurableTopicExchange("my-topic", "my-key"),
+		subscriber.WithDurableFanoutExchange("my-fanout"),
+		subscriber.WithDurablePriorityQueue("my-priority-queue", 5),
+		subscriber.WithPrefetch(20))
 
 	subs.Subscribe(func(m pubsub.Message) {
 		log.Printf("consumed message %s", m.ID())
