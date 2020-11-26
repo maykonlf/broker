@@ -1,23 +1,27 @@
 package subscriber
 
+// Option is a subscriber option used to customize the consumer.
 type Option func(s Subscriber)
 
+// WithName set consumer name.
 func WithName(name string) Option {
 	return func(s Subscriber) {
 		s.SetName(name)
 	}
 }
 
-func WithPrefetchQos(count, size int, isGlobal bool) Option {
+// WithPrefetch set prefetch count, and size.
+func WithPrefetch(count int) Option {
 	return func(s Subscriber) {
 		s.SetPrefetchQos(&PrefetchQos{
 			Count:    count,
-			Size:     size,
-			IsGlobal: isGlobal,
+			Size:     0,
+			IsGlobal: false,
 		})
 	}
 }
 
+// WithDurableQueue defines a named durable queue for consumer.
 func WithDurableQueue(name string) Option {
 	return func(s Subscriber) {
 		s.SetQueue(&Queue{
@@ -27,6 +31,7 @@ func WithDurableQueue(name string) Option {
 	}
 }
 
+// WithDurablePriorityQueue defines a named durable queue for consumer with priority.
 func WithDurablePriorityQueue(name string, maxPriority uint8) Option {
 	return func(s Subscriber) {
 		s.SetQueue(&Queue{
@@ -37,6 +42,7 @@ func WithDurablePriorityQueue(name string, maxPriority uint8) Option {
 	}
 }
 
+// WithDurableFanoutExchange declare a fanout exchange an bind it to the consumer queue.
 func WithDurableFanoutExchange(name string) Option {
 	return func(s Subscriber) {
 		s.AddExchange(&Exchange{
@@ -47,6 +53,7 @@ func WithDurableFanoutExchange(name string) Option {
 	}
 }
 
+// WithDurableTopicExchange declare a topic exchange and bind it to the consumer queue.
 func WithDurableTopicExchange(name, routingKey string) Option {
 	return func(s Subscriber) {
 		s.AddExchange(&Exchange{

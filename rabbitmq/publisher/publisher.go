@@ -13,10 +13,11 @@ type Publisher interface {
 	pubsub.Publisher
 }
 
+// NewPublisher returns a new RabbitMQ publisher.
 func NewPublisher(uri string, options ...Option) Publisher {
 	publisher := &publisher{
 		mutex:             &sync.Mutex{},
-		connectionOptions: &connection.ConnectionOptions{URI: uri},
+		connectionOptions: &connection.Options{URI: uri},
 	}
 
 	for _, optionFunction := range options {
@@ -28,10 +29,11 @@ func NewPublisher(uri string, options ...Option) Publisher {
 
 type publisher struct {
 	mutex             *sync.Mutex
-	connectionOptions *connection.ConnectionOptions
+	connectionOptions *connection.Options
 	conn              connection.Connection
 }
 
+// Publish publishes a message to a topic (and optionally to a routing key).
 func (p *publisher) Publish(m pubsub.Message, topic string, routingKey ...string) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()

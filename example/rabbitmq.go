@@ -29,7 +29,8 @@ func subscriber() {
 		subscriber2.WithName("my consumer name"),
 		subscriber2.WithDurableTopicExchange("my-topic", "my-key"),
 		subscriber2.WithDurableFanoutExchange("my-fanout"),
-		subscriber2.WithDurablePriorityQueue("my-priority-queue", 5))
+		subscriber2.WithDurablePriorityQueue("my-priority-queue", 5),
+		subscriber2.WithPrefetch(20))
 
 	subs.Subscribe(func(m pubsub.Message) {
 		log.Printf("consumed message %s", m.ID())

@@ -13,7 +13,7 @@ type Connection interface {
 }
 
 type connection struct {
-	options                   *ConnectionOptions
+	options                   *Options
 	connection                *amqp.Connection
 	channel                   *amqp.Channel
 	disconnectionErrorChannel chan *amqp.Error
@@ -27,7 +27,7 @@ func (c *connection) SetReconnectHooks(hooks ...func()) {
 	c.reconnectHooks = hooks
 }
 
-func NewConnection(options *ConnectionOptions) Connection {
+func NewConnection(options *Options) Connection {
 	conn := &connection{
 		options:                   options,
 		disconnectionErrorChannel: make(chan *amqp.Error),

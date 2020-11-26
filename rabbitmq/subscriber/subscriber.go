@@ -15,6 +15,7 @@ type Subscriber interface {
 	SetPrefetchQos(qos *PrefetchQos)
 }
 
+// NewSubscriber creates a new RabbitMQ consumer.
 func NewSubscriber(uri string, options ...Option) Subscriber {
 	subscriber := &subscriber{
 		name:                      "",
@@ -22,7 +23,7 @@ func NewSubscriber(uri string, options ...Option) Subscriber {
 		disconnectionErrorChannel: make(chan error),
 		queue:                     &Queue{},
 		prefetchQos:               &PrefetchQos{},
-		connectionOptions:         &connection.ConnectionOptions{URI: uri},
+		connectionOptions:         &connection.Options{URI: uri},
 	}
 
 	for _, optionFunction := range options {
@@ -38,7 +39,7 @@ type subscriber struct {
 	subscriberHandler         func(message pubsub.Message)
 	messageDeliveryChannel    <-chan amqp.Delivery
 	conn                      connection.Connection
-	connectionOptions         *connection.ConnectionOptions
+	connectionOptions         *connection.Options
 	exchanges                 []*Exchange
 	queue                     *Queue
 	isAutoAck                 bool
@@ -50,6 +51,7 @@ type subscriber struct {
 	prefetchQos               *PrefetchQos
 }
 
+// Subscribe start consuming and delivery every consumed message to the given function.
 func (s *subscriber) Subscribe(handler func(message pubsub.Message)) {
 	s.registerSubscriberHandler(handler)
 	s.setupSubscriber()
